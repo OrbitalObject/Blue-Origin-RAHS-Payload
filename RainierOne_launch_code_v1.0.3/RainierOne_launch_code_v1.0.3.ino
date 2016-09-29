@@ -39,12 +39,10 @@ void setup()
                             // to allow for a complete transfer before timing out).
   
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Set up LED light source (specific pin TBD)
+// Set up LED light source (specific pins TBD)
 // also set up camera (not sure what this will look like... need to experiment with actual camera)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
   pinMode(2, OUTPUT); //LED 1
-  digitalWrite(2, LOW);
-  pinMode (3, OUTPUT); //LED 2
   digitalWrite(2, LOW);
   pinMode(4, OUTPUT); //camera
   digitalWrite (4, LOW);
@@ -108,13 +106,10 @@ void loop()
 // i'd like to test this loop ASAP to see if it even works correctly
 ////////////////////////////////////////////////////////////////////////////////////////////////////
     (flight_info.flight_state =='@') ? digitalWrite(2, HIGH)); // LED 1 on 
-    (flight_info.flight_state =='@') ? delay(20); 
-    (flight_info.flight_state =='@') ? digitalWrite(3, HIGH)); // LED 2 on 
     (flight_info.flight_state =='@') ? digitalWrite(4, HIGH); //turn on camera here
     (flight_info.flight_state =='D') ? cycles= true //vibration motor cycles
     (flight_info.flight_state =='F') ? cycles= false 
     (flight_info.flight_state =='I') ? digitalWrite(2, LOW); //turn off LED1
-    (flight_info.flight_state =='I') ? digitalWrite(3, LOW); //turn off LED2
     (flight_info.flight_state =='I') ? digitalWrite(4,LOW); //turn off camera
 ////////////////////////////////////////////////////////////////////////////////////////////////////
     
