@@ -6,6 +6,8 @@
 #define SUCCESS         0       // Success return code.
 #define ERROR           -1      // Error return code.
 
+#define cycles (bool)   false   //vibration motor cycle process
+#define vibCycle (int)  20      //number of seconds the motor will be on at a time (subject to change)
 
 // Struct to contain all of the NRNSP flight data in one object.
 typedef struct NRdata
@@ -37,12 +39,12 @@ void setup()
                             // to allow for a complete transfer before timing out).
   
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Set up LED light source (whichever pin TBD)
-// also set up camera (not sure what this well look like... need to experiment with actual camera)
+// Set up LED light source (specific pin TBD)
+// also set up camera (not sure what this will look like... need to experiment with actual camera)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-  pinMode(2, OUTPUT);
+  pinMode(2, OUTPUT); //LED
   digitalWrite(2, LOW);
-  pinMode(3, OUTPUT);
+  pinMode(3, OUTPUT); //camera
   digitalWrite (3, LOW);
 ////////////////////////////////////////////////////////////////////////////////////////////////////
   
@@ -87,6 +89,12 @@ void loop()
     {
       continue;
     }
+    if cycles= true
+    {
+      //turn on motor here
+      delay(vibCycle);
+      //turn off motor here
+    }
     
     
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -94,13 +102,13 @@ void loop()
 // go I think)
 // then turn on/off vibration motor
 // then turn LED and camera off
-// i don't know the actually commands for these components until we ge them
+// i don't know the actually commands for these components until we get them
 // i'd like to test this loop ASAP to see if it even works correctly
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-    (flight_info.flight_state =='@') ? digitalWrite(2, HIGH));  
+    (flight_info.flight_state =='@') ? digitalWrite(2, HIGH)); // LED on 
     (flight_info.flight_state =='@') ? digitalWrite(3, HIGH); //turn on camera here
-    (flight_info.flight_state =='D') ? //turn on vibration motor here
-    (flight_info.flight_state =='F') ? //turn off vibration motor
+    (flight_info.flight_state =='D') ? cycles= true //vibration motor cycles
+    (flight_info.flight_state =='F') ? cycles= false 
     (flight_info.flight_state =='J') ? digitalWrite(2, LOW); //turn off LED
     (flight_info.flight_state =='J') ? digitalWrite(3,LOW); //turn off camera
 ////////////////////////////////////////////////////////////////////////////////////////////////////
