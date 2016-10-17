@@ -42,13 +42,15 @@ void setup()
   Serial.setTimeout(20);    // Set timeout to 20ms (It may take up to 17ms for all of the data to
                             // transfer from the NRNSP, this ensures that enough time has passed
                             // to allow for a complete transfer before timing out).
-  
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+  File rainerflight = SD.open("flightdata.txt", FILE_WRITE);
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Set up LED light source (specific pins TBD)
 // also set up camera (not sure what this will look like... need to experiment with actual camera)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-  pinMode(2, OUTPUT); //LED 1
-  digitalWrite(2, LOW);
+  pinMode(13, OUTPUT); //LED 1
+  digitalWrite(13, LOW);
   pinMode(4, OUTPUT); //camera
   digitalWrite (4, LOW);
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +67,7 @@ void setup()
   }
   Serial.println("card initialized.");
 }
-}
+
 
 
 void loop()
@@ -106,7 +108,7 @@ void loop()
     {
       continue;
     }
-    if (cycles= true)
+    
     {
       //turn on motor here
       delay(vibCycle);
@@ -122,12 +124,16 @@ void loop()
 // i don't know the actually commands for these components until we get them
 // i'd like to test this loop ASAP to see if it even works correctly
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-    (flight_info.flight_state =='@') ? digitalWrite(2, HIGH)); // LED 1 on 
+    (flight_info.flight_state =='B') ? analogWrite(13, HIGH); // LED 1 on 
     (flight_info.flight_state =='A') ? digitalWrite(4, HIGH); //turn on camera here
-    (flight_info.flight_state =='D') ? cycles= true //vibration motor cycles
-    (flight_info.flight_state =='F') ? cycles= false 
-    (flight_info.flight_state =='I') ? digitalWrite(2, LOW); //turn off LED1
-    (flight_info.flight_state =='I') ? digitalWrite(4,LOW); //turn off camera
+    //we do not at this point know how the arduino will communicate with rpi to turn on 
+    //camera
+    (flight_info.flight_state =='D') ? cycles= true; //vibration motor cycles
+    (flight_info.flight_state =='F') ? cycles= false; 
+    (flight_info.flight_state =='I') ? rainerflight.close();
+
+
+ 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
     
   }
@@ -270,14 +276,13 @@ int parse_serial_packet(const char* buf, NRdata* flight_data)
   {
     return (ERROR);
   }
-    // open the file. note that only one file can be open at a time,
-  // so you have to close this one before opening another.
-  File flight_info = SD.open("flightdata.txt", FILE_WRITE);
 
+  //THIS PART WAS WRITTEN BY JOHN AND JULIA ON THURSDAY OCTOBER 6 AROUND 10:15 AM
+  //basically it's configured to print each character one at a time, as opposed to
+  //storing all the data then printing it to the file 
   // if the file is available, write to it:
-  if (flight_info) {
-    flight_info.println(temp);
-    flight_info.close();
+  if (rainerflight) {
+    rainerflight.println(temp);
     // print to the serial port too:
     Serial.println(temp);
   }
