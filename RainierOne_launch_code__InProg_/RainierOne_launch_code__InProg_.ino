@@ -6,16 +6,13 @@
 #define SUCCESS         0       // Success return code.
 #define ERROR           -1      // Error return code.
 
-#define cycles (bool)   false   //vibration motor cycle process
-#define vibCycle (int)  20      //number of seconds the motor will be on at a time (subject to change)
-
 #include <SPI.h>
 #include <SD.h>
 
-const int chipSelect = 4; //4 is the pin number- subject to change
+File rainerflight;
 
 // Struct to contain all of the NRNSP flight data in one object.
-typedef struct NRdata
+typedef struct NRdata 
 {
   char flight_state;
   double exptime;
@@ -44,28 +41,24 @@ void setup()
                             // to allow for a complete transfer before timing out).
   // open the file. note that only one file can be open at a time,
   // so you have to close this one before opening another.
-  File rainerflight = SD.open("flightdata.txt", FILE_WRITE);
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Set up LED light source (specific pins TBD)
 // also set up camera (not sure what this will look like... need to experiment with actual camera)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-  pinMode(13, OUTPUT); //LED 1
-  digitalWrite(13, LOW);
-  pinMode(4, OUTPUT); //camera
-  digitalWrite (4, LOW);
+  pinMode(9, OUTPUT); //LED 1  
+  digitalWrite(9, LOW);
+  pinMode(8, OUTPUT); // vibe motor
+  digitalWrite(8, LOW);
+  //configure camera output here
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
     // Open serial communications and wait for port to open:
   while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
+    delay(1); // wait for serial port to connect. Needed for native USB port only
   }
 
-  // see if the card is present and can be initialized:
-  if (!SD.begin(chipSelect)) {
-    Serial.println("Card failed, or not present");
-    // don't do anything more:
-    return;
-  }
-  Serial.println("card initialized.");
+   pinMode(10, OUTPUT);
 }
 
 
@@ -108,35 +101,27 @@ void loop()
     {
       continue;
     }
-    
-    {
-      //turn on motor here
-      delay(vibCycle);
-      //turn off motor here
+    if (flight_info.flight_state == 'A'){ //A for takeoff
+      digitalWrite(9, HIGH);  //LED on
+      //send signal to activate rPi here
+    }   
+    if (flight_info.flight_state == 'I'){ //I for landing
+      digitalWrite(9, LOW);   //LED off
+      //send signal to shut off rPi here
+    }   
+    // THE PRECISE TIMES FOR THE VIBRATION MOTOR CYCLES ARE STILL UNFINALIZED
+    if (flight_info.flight_state == 'D'){ //D for coast start
+      digitalWrite(8, HIGH);   //vibration on
+      delay(100);
+      digitalWrite(8, LOW);   //vibration off
+      delay(100);
     }
-    
-    
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Turn on light & camera when power is on (this part is a loop where all on/off founctions should 
-// go I think)
-// then turn on/off vibration motor
-// then turn LED and camera off
-// i don't know the actually commands for these components until we get them
-// i'd like to test this loop ASAP to see if it even works correctly
-////////////////////////////////////////////////////////////////////////////////////////////////////
-    (flight_info.flight_state =='B') ? analogWrite(13, HIGH); // LED 1 on 
-    (flight_info.flight_state =='A') ? digitalWrite(4, HIGH); //turn on camera here
-    //we do not at this point know how the arduino will communicate with rpi to turn on 
-    //camera
-    (flight_info.flight_state =='D') ? cycles= true; //vibration motor cycles
-    (flight_info.flight_state =='F') ? cycles= false; 
-    (flight_info.flight_state =='I') ? rainerflight.close();
-
-
- 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-  }
+     if (flight_info.flight_state == 'A'){ 
+      digitalWrite(8, HIGH);   //vibration on
+      delay(100);
+      digitalWrite(8, LOW);   //vibration off
+      delay(100);
+    }
 }
 
 
@@ -171,7 +156,6 @@ int parse_serial_packet(const char* buf, NRdata* flight_data)
     // Scan the buffer from the current index until the next comma and place the data into the 
     // temporary buffer.
     res = sscanf((buf + index), "%[^,]", temp);
-   
     // If sscanf failed to get a parameter then the buffer was not in the correct format so the 
     // function should return with an error.
     if (res == 0)
@@ -188,7 +172,7 @@ int parse_serial_packet(const char* buf, NRdata* flight_data)
     {
       return (ERROR);
     }
-
+    Serial.print(temp);
     // Depending upon the current data field being parsed, convert the data in the temporary buffer 
     // to the appropriate format and store it in the flight data struct.
     switch (fieldnum)
@@ -260,8 +244,14 @@ int parse_serial_packet(const char* buf, NRdata* flight_data)
       case 21:
         flight_data->fault_warn = (temp[0] == '0') ? false : true;
         break;
+      Serial.print(temp);
     }
-
+    
+    File rainerflight = SD.open("flightdata.txt", FILE_WRITE);
+    if (rainerflight) {
+      rainerflight.println(temp);
+      rainerflight.println(",");
+    }
     // Increment the index for the current data field.
     fieldnum++;
   }
@@ -276,18 +266,5 @@ int parse_serial_packet(const char* buf, NRdata* flight_data)
   {
     return (ERROR);
   }
-
-  //THIS PART WAS WRITTEN BY JOHN AND JULIA ON THURSDAY OCTOBER 6 AROUND 10:15 AM
-  //basically it's configured to print each character one at a time, as opposed to
-  //storing all the data then printing it to the file 
-  // if the file is available, write to it:
-  if (rainerflight) {
-    rainerflight.println(temp);
-    // print to the serial port too:
-    Serial.println(temp);
-  }
-  // if the file isn't open, pop up an error:
-  else {
-    Serial.println("error opening datalog.txt");
-  }
+  rainerflight.close();
 }
