@@ -6,9 +6,13 @@
 #define SUCCESS         0       // Success return code.
 #define ERROR           -1      // Error return code.
 
+#include <SPI.h>
+#include <SD.h>
+
+File rainerflight;
 
 // Struct to contain all of the NRNSP flight data in one object.
-typedef struct NRdata
+typedef struct NRdata 
 {
   char flight_state;
   double exptime;
@@ -35,15 +39,28 @@ void setup()
   Serial.setTimeout(20);    // Set timeout to 20ms (It may take up to 17ms for all of the data to
                             // transfer from the NRNSP, this ensures that enough time has passed
                             // to allow for a complete transfer before timing out).
-  
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Set up LED light source
+// Set up LED light source (specific pins TBD)
+// also set up camera (not sure what this will look like... need to experiment with actual camera)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-  pinMode(2, OUTPUT);
-  digitalWrite(2, LOW);
+  pinMode(9, OUTPUT); //LED 1  
+  digitalWrite(9, LOW);
+  pinMode(8, OUTPUT); // vibe motor
+  digitalWrite(8, LOW);
+  //configure camera output here
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-  
+    // Open serial communications and wait for port to open:
+  while (!Serial) {
+    delay(1); // wait for serial port to connect. Needed for native USB port only
+  }
+
+   pinMode(10, OUTPUT);
 }
+
 
 
 void loop()
@@ -84,17 +101,27 @@ void loop()
     {
       continue;
     }
-    
-    
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Turn on light & camera when power is on (this part is a loop where all on/off founctions should 
-// go I think) -john
-////////////////////////////////////////////////////////////////////////////////////////////////////
-    (flight_info.flight_state =='@') ? digitalWrite(2, HIGH));  
-    (flight_info.flight_state =='@') ?
-////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-  }
+    if (flight_info.flight_state == 'A'){ //A for takeoff
+      digitalWrite(9, HIGH);  //LED on
+      //send signal to activate rPi here
+    }   
+    if (flight_info.flight_state == 'I'){ //I for landing
+      digitalWrite(9, LOW);   //LED off
+      //send signal to shut off rPi here
+    }   
+    // THE PRECISE TIMES FOR THE VIBRATION MOTOR CYCLES ARE STILL UNFINALIZED
+    if (flight_info.flight_state == 'D'){ //D for coast start
+      digitalWrite(8, HIGH);   //vibration on
+      delay(100);
+      digitalWrite(8, LOW);   //vibration off
+      delay(100);
+    }
+     if (flight_info.flight_state == 'A'){ 
+      digitalWrite(8, HIGH);   //vibration on
+      delay(100);
+      digitalWrite(8, LOW);   //vibration off
+      delay(100);
+    }
 }
 
 
@@ -129,7 +156,6 @@ int parse_serial_packet(const char* buf, NRdata* flight_data)
     // Scan the buffer from the current index until the next comma and place the data into the 
     // temporary buffer.
     res = sscanf((buf + index), "%[^,]", temp);
-   
     // If sscanf failed to get a parameter then the buffer was not in the correct format so the 
     // function should return with an error.
     if (res == 0)
@@ -146,7 +172,7 @@ int parse_serial_packet(const char* buf, NRdata* flight_data)
     {
       return (ERROR);
     }
-
+    Serial.print(temp);
     // Depending upon the current data field being parsed, convert the data in the temporary buffer 
     // to the appropriate format and store it in the flight data struct.
     switch (fieldnum)
@@ -218,8 +244,14 @@ int parse_serial_packet(const char* buf, NRdata* flight_data)
       case 21:
         flight_data->fault_warn = (temp[0] == '0') ? false : true;
         break;
+      Serial.print(temp);
     }
-
+    
+    File rainerflight = SD.open("flightdata.txt", FILE_WRITE);
+    if (rainerflight) {
+      rainerflight.println(temp);
+      rainerflight.println(",");
+    }
     // Increment the index for the current data field.
     fieldnum++;
   }
@@ -234,4 +266,5 @@ int parse_serial_packet(const char* buf, NRdata* flight_data)
   {
     return (ERROR);
   }
+  rainerflight.close();
 }
